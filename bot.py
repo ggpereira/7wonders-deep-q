@@ -8,7 +8,9 @@ import transform
 import utils
 import torch 
 import strategies 
+import save_statistics
 from sklearn import preprocessing
+import time 
 
 
 # CARD ACTIONS
@@ -163,9 +165,7 @@ def check_age_finish(turn, end_turn):
     print('TURN: {}'.format(turn))
     print('END TURN: {}'.format(end_turn))
     if(turn == end_turn):
-        print('ENTRA AQUI')
         return True 
-    print('ENTRA NA CONDIÇÃO FALSA')
     return False 
 
 
@@ -188,6 +188,7 @@ def decode_all_actions(enc_action):
     return labelencoder.inverse_transform([enc_action])
 
 
+
 def play(player_id, agent, gamestatus):
     current_era = gamestatus['game']['era']
     current_turn = gamestatus['game']['turn']
@@ -205,7 +206,6 @@ def play(player_id, agent, gamestatus):
         gamestatus['game']['era'] =  gamestatus['game']['era'] - 1
         done = True 
     
-
     if(utils.PREVIOUS_AGE != gamestatus['game']['era']):
         utils.DISCARD_COUNT = 0
 
@@ -221,7 +221,25 @@ def play(player_id, agent, gamestatus):
         print('reward received: {}'.format(reward))
         print('total score: {}'.format(gamestatus['players'][str(player_id)]['points']['total']))
 
+        utils.AMOUNT_REWARD += reward
+
         agent.store_transition(utils.PREVIOUS_OBS, utils.PREVIOUS_ACTION, reward, observation, done)
+
+        ## TESTS
+        save_statistics.save_plays_log({
+            "hand": utils.PREVIOUS_PLAYER_STATE['cards_hand'],
+            "action": utils.PREVIOUS_D_ACTION,
+            "amount": utils.PREVIOUS_PLAYER_STATE["amount"],
+            "wonder_id": utils.PREVIOUS_PLAYER_STATE["wonder_id"],
+            "wonder_stage": utils.PREVIOUS_PLAYER_STATE["wonder_stage"],
+            "resources": utils.PREVIOUS_PLAYER_STATE["resources"],
+            "turn": utils.PREVIOUS_GAME_STATE["turn"],
+            "era": utils.PREVIOUS_GAME_STATE["era"],
+            "time": utils.TIME_DECISION,
+            "reward": reward, 
+            "amount_reward": utils.AMOUNT_REWARD,
+        })
+
         agent.learn()
         print("<=================================================================================>")
     # se o jogo acabou não há ações para fazer
@@ -231,8 +249,26 @@ def play(player_id, agent, gamestatus):
         torch.save(agent.q_eval.state_dict(), './checkpoint/checkpoint.pth')
         print('Model checkpoint.pth saved')
         print("##################################################################")
+
+        winner = gamestatus["game"]["winner_id"] == player_id
+
+        ## TESTS
+        save_statistics.save_match_log({
+            "amount": playerstatus["amount"],
+            "wonder_id": playerstatus["wonder_id"],
+            "wonder_stage": playerstatus["wonder_stage"],
+            "resources": playerstatus["resources"],
+            "points": playerstatus["points"],
+            "winner": winner,
+            "total_reward": utils.AMOUNT_REWARD
+        })
+
+        utils.AMOUNT_REWARD = 0
+
         return 
 
+
+    start_time = time.time()
     # se não  estiver no turno de descarte joga normalmente
     if current_turn != discard_turn:
         # pega todas as ações válidas para o estado atual do jogador
@@ -256,17 +292,26 @@ def play(player_id, agent, gamestatus):
 
     # escreve ação realizada no arquivo
     write_json(d_action, player_id, gamestatus['players'][str(player_id)])
-    
+    end_time = time.time()
+
+    utils.TIME_DECISION = end_time - start_time 
+
     # guarda o score atual para calcular a diferença no próximo turno
     utils.PREVIOUS_SCORE = gamestatus['players'][str(player_id)]['points']['total'] 
     
     # guarda ação atual
     utils.PREVIOUS_ACTION = action 
 
+    # tests
+    utils.PREVIOUS_D_ACTION = d_action 
+
     # guarda a observação atual 
     utils.PREVIOUS_OBS = observation 
 
     utils.PREVIOUS_AGE = gamestatus['game']['era']
+
+    utils.PREVIOUS_GAME_STATE = gamestatus["game"]
+    utils.PREVIOUS_PLAYER_STATE = gamestatus["players"][str(player_id)]
 
     if int(d_action/100) == BUILD:
         utils.PREVIOUS_REWARD = get_card_reward(gamestatus, player_id, d_action % 100)

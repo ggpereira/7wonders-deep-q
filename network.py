@@ -35,7 +35,7 @@ class DeepQNetwork(nn.Module):
 
 class Agent():
     def __init__(self, gamma, epsilon, lr, input_dims, batch_size, n_actions, max_mem_size=100000, 
-    eps_end=0.01, eps_dec=3e-4):
+    eps_end=0.01, eps_dec=3e-4, training_mode=True):
       self.gamma = gamma 
       self.epsilon = epsilon
       self.lr = lr  
@@ -46,7 +46,10 @@ class Agent():
       self.batch_size = batch_size 
       self.mem_counter = 0 
       self.q_eval = DeepQNetwork(self.lr, n_actions=n_actions, input_dims=input_dims, 
-      fc1_dims=128, fc2_dims=128)
+      fc1_dims=128, fc2_dims=128) 
+
+      if not training_mode:
+        self.q_eval.load_state_dict(T.load("./checkpoint/checkpoint.pth"))
       
       self.state_memory = np.zeros((self.mem_size, *input_dims), dtype=np.float32)
       self.new_state_memory = np.zeros((self.mem_size, *input_dims), dtype=np.float32)
@@ -95,16 +98,22 @@ class Agent():
 
 
     def learn(self):
+      # O número de tuplas armazenadas precisa ser maior que o tamanho do batch para o agente começar a aprender
       if self.mem_counter < self.batch_size:
         return 
 
       self.q_eval.optimizer.zero_grad()
 
+      # Pega o tamanho atual da memória
       max_mem = min(self.mem_counter, self.mem_size)
+
+      # Seleciona 64 índices aleatórios da memória de replay
       batch = np.random.choice(max_mem, self.batch_size, replace=False)
       
+      # Gera os índices para o lote 
       batch_index = np.arange(self.batch_size, dtype=np.int32)
 
+      # seleciona as 64 amostras da memória de replay
       state_batch = T.tensor(self.state_memory[batch]).to(self.q_eval.device)
       new_state_batch = T.tensor(self.new_state_memory[batch]).to(self.q_eval.device)
       reward_batch = T.tensor(self.reward_memory[batch]).to(self.q_eval.device)
@@ -112,18 +121,22 @@ class Agent():
 
       action_batch = self.action_memory[batch]
 
+      # propaga os estados na rede
       q_eval = self.q_eval.forward(state_batch)[batch_index, action_batch]
       q_next = self.q_eval.forward(new_state_batch)
       q_next[terminal_batch] = 0.0
 
+      # calcula os q-targets para a rede
       q_target = reward_batch + self.gamma * T.max(q_next, dim=1)[0]
 
+      # calcula o erro,  (valor Q fornecido pela rede - valor q calculado pela fórmula)
       loss = self.q_eval.loss(q_target, q_eval).to(self.q_eval.device)
       loss.backward()
       self.q_eval.optimizer.step()
 
       print('LOSS: {}'.format(loss.item()))
       
+      # epsilon é decrementado, ao longo do tempo a rede passa a priorizar uma política gulosa
       self.epsilon = self.epsilon - self.eps_dec if self.epsilon > self.eps_min else self.eps_min
 
     
