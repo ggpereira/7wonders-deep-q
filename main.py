@@ -12,14 +12,11 @@ import time
 import numpy as np 
 
 
-
 def read_json(path):
     with open(path) as file:
         data = json.load(file)
 
     return data 
-
-
 class GameStateHandler(PatternMatchingEventHandler):
     patterns = [sys.argv[1] + '/game_status.json']
 
@@ -28,58 +25,20 @@ class GameStateHandler(PatternMatchingEventHandler):
         self.bot_id = bot_id 
         self.agent = network.Agent(
             gamma=0.99,
-            epsilon=0.01,
+            epsilon=1.0,
             lr=0.0001,
             batch_size=64,
             n_actions=(len(np.unique(utils.ALL_LABELS))),
             eps_end=0.01, 
             input_dims=[utils.FEATURES_DIM],
-            training_mode=False  
+            training_mode=True  
         )
-
-        # self.agent_age1 = network.Agent(
-        #     gamma=0.99,
-        #     epsilon=1.0, 
-        #     batch_size=64,
-        #     n_actions=len(utils.AGE1_LABELS),
-        #     eps_end=0.01, 
-        #     input_dims=[utils.FEATURES_AGE1],
-        #     lr=0.00001
-        # )
-
-        # self.agent_age2 = network.Agent(
-        #     gamma=0.99,
-        #     epsilon=1.0,
-        #     batch_size=64,
-        #     n_actions=len(utils.AGE2_LABELS),
-        #     eps_end=0.01,
-        #     input_dims=[utils.FEATURES_AGE2],
-        #     lr=0.00001
-        # )
-
-        # self.agent_age3 = network.Agent(
-        #     gamma=0.99,
-        #     epsilon=1.0,
-        #     batch_size=64,
-        #     n_actions=len(utils.AGE3_LABELS),
-        #     eps_end=0.01,
-        #     input_dims=[utils.FEATURES_AGE3],
-        #     lr=0.00001
-        # )
 
 
     def process(self, event):
         print('Game state changed: {} - {}'.format(event.src_path, event.event_type))
         gamestatus = read_json(sys.argv[1] + '/game_status.json')
         bot.play(self.bot_id, self.agent, gamestatus)
-        # if gamestatus['game']['era'] == 1:
-        #     bot.play(self.bot_id, self.agent_age1, gamestatus)    
-
-        # if gamestatus['game']['era'] == 2:
-        #     bot.play(self.bot_id, self.agent_age2, gamestatus)
-
-        # if gamestatus['game']['era'] >= 3: 
-        #     bot.play(self.bot_id, self.agent_age3, gamestatus)
 
 
     def on_modified(self, event):
