@@ -49,7 +49,8 @@ class Agent():
       fc1_dims=128, fc2_dims=128) 
 
       if not training_mode:
-        self.q_eval.load_state_dict(T.load("./checkpoint/checkpoint.pth"))
+        print('Carregando modelo')
+        self.q_eval.load_state_dict(T.load("./checkpoint/checkpoint_6000_treino2.pth"))
       
       self.state_memory = np.zeros((self.mem_size, *input_dims), dtype=np.float32)
       self.new_state_memory = np.zeros((self.mem_size, *input_dims), dtype=np.float32)

@@ -25,13 +25,13 @@ class GameStateHandler(PatternMatchingEventHandler):
         self.bot_id = bot_id 
         self.agent = network.Agent(
             gamma=0.99,
-            epsilon=1.0,
+            epsilon=0.01,
             lr=0.0001,
             batch_size=64,
             n_actions=(len(np.unique(utils.ALL_LABELS))),
             eps_end=0.01, 
             input_dims=[utils.FEATURES_DIM],
-            training_mode=True  
+            training_mode=False
         )
 
 

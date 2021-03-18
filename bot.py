@@ -314,7 +314,9 @@ def play(player_id, agent, gamestatus):
         utils.PREVIOUS_REWARD = get_card_reward(gamestatus, player_id, d_action % 100)
     elif int(d_action/100) == BUILD_WONDER:
         utils.PREVIOUS_REWARD = 4
+
     elif int(d_action/100) == DISCARD:
+        utils.PREVIOUS_REWARD = 0
         utils.DISCARD_COUNT += 1
         if utils.DISCARD_COUNT > 2:
             utils.PREVIOUS_REWARD = -5
