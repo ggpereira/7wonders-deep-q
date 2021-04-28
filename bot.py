@@ -316,9 +316,10 @@ def play(player_id, agent, gamestatus):
         utils.PREVIOUS_REWARD = 4
 
     elif int(d_action/100) == DISCARD:
-        utils.PREVIOUS_REWARD = 0
-        utils.DISCARD_COUNT += 1
-        if utils.DISCARD_COUNT > 2:
-            utils.PREVIOUS_REWARD = -5
-        else:
-            utils.PREVIOUS_REWARD = 1
+        utils.PREVIOUS_REWARD = 1
+        # utils.PREVIOUS_REWARD = 0
+        # utils.DISCARD_COUNT += 1
+        # if utils.DISCARD_COUNT > 2:
+        #     utils.PREVIOUS_REWARD = -5
+        # else:
+        #     utils.PREVIOUS_REWARD = 1

@@ -35,7 +35,7 @@ class DeepQNetwork(nn.Module):
 
 class Agent():
     def __init__(self, gamma, epsilon, lr, input_dims, batch_size, n_actions, max_mem_size=100000, 
-    eps_end=0.01, eps_dec=3e-4, training_mode=True):
+    eps_end=0.01, eps_dec=1e-4, training_mode=True):
       self.gamma = gamma 
       self.epsilon = epsilon
       self.lr = lr  
@@ -50,7 +50,7 @@ class Agent():
 
       if not training_mode:
         print('Carregando modelo')
-        self.q_eval.load_state_dict(T.load("./checkpoint/checkpoint_6000_treino2.pth"))
+        self.q_eval.load_state_dict(T.load("./checkpoint/checkpoint.pth"))
       
       self.state_memory = np.zeros((self.mem_size, *input_dims), dtype=np.float32)
       self.new_state_memory = np.zeros((self.mem_size, *input_dims), dtype=np.float32)
